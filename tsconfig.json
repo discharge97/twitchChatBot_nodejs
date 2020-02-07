@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "typeRoots": [
+      "./src/@types",
+      "./node_modules/@types"
+    ],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

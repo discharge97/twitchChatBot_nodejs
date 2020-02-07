@@ -1,0 +1,35 @@
+{
+  "name": "twitch",
+  "version": "1.0.1",
+  "description": "Twitch chat bot",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cleverbot-free": "^1.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "nexe": "^3.3.2",
+    "socket.io": "^2.3.0",
+    "tmi.js": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.17.1",
+    "@types/cors": "^2.8.6",
+    "@types/socket.io": "^2.1.4",
+    "@types/tmi.js": "^1.4.0",
+    "typescript": "^3.7.5"
+  },
+  "scripts": {
+    "build-exe": "nexe index.js -o ./server/twitchServer.exe"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "Aleksandar Stojadinovic",
+  "license": "ISC",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}
