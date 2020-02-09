@@ -1,3 +1,4 @@
 node_modules
 twitch.exe
 ./server
+./dist
