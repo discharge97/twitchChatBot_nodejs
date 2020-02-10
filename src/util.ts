@@ -26,6 +26,6 @@ export const emmitWHRemove = (io: SocketIO.Server, username: string) => {
 
 // Bot sends a massge in Twitch chat
 export const botSay = (client: any, channel: string, message: string) => {
-    let msg = "" + message;
-    client.action(channel, msg);
+    // let msg = "" + message;
+    client.action(channel, message);
 }

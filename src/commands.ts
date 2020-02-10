@@ -2,12 +2,15 @@ import fs from 'fs';
 import https from 'https';
 import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval } from './util'
 import cleverbot from "cleverbot-free";
+import { addPoints, PointsType } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
 
-export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, admins: string[], TAGS: any, commandText: string) => {
+
+export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
     const cmdParts: any = commandText.match(regEx_commands);
+    addPoints("", PointsType.User);
 
     console.log(commandText, cmdParts);
 
@@ -54,43 +57,30 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
         case "whitelist": case "w":
             console.log("!whitelist");
 
-            if (admins.includes(TAGS.username)) {
+            if (twClient.isMod(channel, TAGS.username)) {
                 if (cmdParts[1] === "add") {
                     emmitWHAdd(io, cmdParts[2]);
                 } else if (cmdParts[2] === "remove" || cmdParts[2] === "rm") {
                     emmitWHRemove(io, cmdParts[2]);
                 }
             } else {
-                botSay(twClient, channel, "Only admins can add/remove people from whitelist. Type !admin/!a add/remove(rm) <username> to add/remove a user to admin group");
+                botSay(twClient, channel, "Only mods can add/remove people from whitelist. Type !admin/!a add/remove(rm) <username> to add/remove a user to admin group");
             }
             break;
 
-        case "admins":
-            console.log("!admins");
+        case "mods":
+            console.log("!mods");
 
-            botSay(twClient, channel, "Admins: " + admins.join(", "));
+            botSay(twClient, channel, "Mods: " + twClient.mods().join(", "));
             break;
 
-        case "admin": case "a":
-            console.log("!admin");
-
-            if (admins.includes(TAGS.username)) {
-                if (cmdParts[1] === "add" && !admins.includes(cmdParts[2])) {
-                    admins.push(cmdParts[2].trim());
-                    botSay(twClient, channel, `${TAGS.username} has added admin role to user ${cmdParts[2]}`);
-                } else if (cmdParts[1] === "remove" || cmdParts[1] === "rm") {
-                    admins.splice(admins.indexOf(cmdParts[2].trim()), 1);
-                    botSay(twClient, channel, `${TAGS.username} has removed admin role from user ${cmdParts[2]}`);
-                }
-                fs.writeFileSync("server/admins.json", admins);
-            } else {
-                botSay(twClient, channel, "Only admins can add/remove admin role from user. Type !admin/!a add/remove(rm) <username> to add/remove a user to admin group");
-            }
+        case "about":
+            botSay(twClient, channel, "My creators name is Aleksandar(Alexander) Stojadinović. He's an okey guy, sometimes. He may join the chat from time to time under the nick 'discharge97', so watch out! Kappa");
             break;
 
-
-
-        default: break;
+        default:
+            botSay(twClient, channel, "Unknown command.");
+            break;
     }
 }
 
@@ -101,4 +91,8 @@ export const handleSpeech = (io: SocketIO.Server, twClient: any, channel: string
         });
     }
     emmitSpeech(io, TAGS.username ? TAGS.username : "", message);
+}
+
+export const say = (twClient: any, channel: string, message: string) => {
+
 }

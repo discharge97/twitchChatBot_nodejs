@@ -4,12 +4,14 @@
   "description": "Twitch chat bot",
   "main": "index.js",
   "dependencies": {
+    "@types/sqlite3": "^3.1.6",
     "body-parser": "^1.19.0",
     "cleverbot-free": "^1.0.3",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "nexe": "^3.3.2",
     "socket.io": "^2.3.0",
+    "sqlite3": "^4.1.1",
     "tmi.js": "^1.5.0"
   },
   "devDependencies": {

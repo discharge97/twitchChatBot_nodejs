@@ -6,26 +6,15 @@ import tmi from 'tmi.js';
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCommand, handleSpeech } from './commands'
+import { handleCommand, handleSpeech, say } from './commands'
 
 const app = express();
 const server = http.createServer(app);
 const sio = io(server);
 
+//#region Configuration properties
 // ================================================ Configuration properties ================================================
 const config = JSON.parse(fs.readFileSync('config.json').toString());
-let admins: string[] = [];
-try {
-    admins = JSON.parse(fs.readFileSync("admins.json").toString());
-} catch (error) { }
-
-// ============ Adding streamer as admin if he's already not ============
-if (!admins.includes(config.twitch.Channel)) {
-    admins.push(config.twitch.Channel);
-    fs.writeFileSync("admins.json", admins);
-}
-// ============ END ============
-
 const options = {
     options: {
         debug: false
@@ -48,8 +37,8 @@ app.get('/', (_, res) => {
     res.sendFile(join(process.cwd(), "index.html"));
 });
 // sio.use("transports", ["websocket"]);
-
 // ================================================ END OF Configuration properties ================================================
+//#endregion Configuration properties
 
 server.listen(8080, () => console.log("Server is running on 127.0.0.1:8080!"));
 
@@ -58,8 +47,13 @@ sio.on('connection', socket => {
     console.log("Client:", socket.id, "has connected!");
 
 });
+
+sio.on('say', (message: string) => {
+    say(client, config.twitch.Channel, message);
+});
+
 try {
-    client.connect();
+    // client.connect();
 
 } catch (err) {
     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
@@ -79,9 +73,8 @@ client.on('message', (channel, tags, message, self) => {
 
         if (message.startsWith(config.twitch.CommandPrefix)) {
             let cmdText = message;
-            // cmdText.replace(config.twitch.CommandPrefix, "");
 
-            handleCommand(sio, client, channel, admins, TAGS, cmdText.replace(config.twitch.CommandPrefix, ""));
+            handleCommand(sio, client, channel, TAGS, cmdText.replace(config.twitch.CommandPrefix, ""));
 
         } else {
             handleSpeech(sio, client, channel, TAGS, message);
