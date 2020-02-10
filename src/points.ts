@@ -2,25 +2,9 @@ import sqlite3 from 'sqlite3';
 
 let db = new sqlite3.Database("C:\\sqlite\\twitchBot.db");
 
-// db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES ('test2', 1,2,'${(new Date).toLocaleDateString()}',0)`, (err) => {
-//     console.error(err);
-// });
-
-// db.prepare("SELECT * FROM USER", (err) => {
-//     db.each("SELECT * FROM USER", (err, row) => {
-//         console.log(row);
-
-//     });
-
-// })
-
-// db.get("SELECT * FROM USER", (err, row) => {
-//     console.log(row);
-// });
-
 class User {
-    readonly id: number | undefined;
-    username: string | undefined;
+    readonly id: number = -1;
+    username: string;
     points: number = 0;
     dateModified: Date = new Date();
     exp: number = 0;
@@ -28,7 +12,6 @@ class User {
 
     constructor(username: string) {
         this.username = username;
-        this.dateModified = new Date();
     }
 }
 
@@ -71,7 +54,6 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
         }
         updateUser(user);
     });
-
 }
 
 export const removePoints = (username: string, amount: number, all: boolean = false) => {
@@ -96,14 +78,18 @@ export const removePoints = (username: string, amount: number, all: boolean = fa
 
 
 const updateUser = (user: User) => {
-    db.exec(`IF EXISTS(SELECT * from user WHERE id=30122)
-    update user set username=${user.username},points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}', where id=${user.id}
-    ELSE
-    insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',watchTime=${user.watchTime});`, (err) => {
-        console.error(err);
+
+    db.get(`SELECT * FROM USER WHERE id=${user.id}`, (err, row) => {
+        console.log("updateUser ->", row);
+
+        if (row) {
+            db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}', where id=${user.id}`, (err) => {
+                console.error(err);
+            });
+        } else {
+            db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',watchTime=${user.watchTime});`, (err) => {
+                console.error(err);
+            });
+        }
     });
 }
-
-// const addUser = (user: User) => {
-//     db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',${user.watchTime});`, (err) => { });
-// }

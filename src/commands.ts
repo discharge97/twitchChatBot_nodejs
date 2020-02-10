@@ -94,5 +94,5 @@ export const handleSpeech = (io: SocketIO.Server, twClient: any, channel: string
 }
 
 export const say = (twClient: any, channel: string, message: string) => {
-
+    botSay(twClient, channel, message);
 }

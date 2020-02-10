@@ -29,3 +29,7 @@ export const botSay = (client: any, channel: string, message: string) => {
     // let msg = "" + message;
     client.action(channel, message);
 }
+
+export const emmitVIPJoin = (io: SocketIO.Server, username: string) => {
+    io.emit("vip", `${username}~ has joined the channel!`);
+}

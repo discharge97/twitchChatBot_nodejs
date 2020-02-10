@@ -7,6 +7,7 @@ import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say } from './commands'
+import { emmitVIPJoin } from './util';
 
 const app = express();
 const server = http.createServer(app);
@@ -53,20 +54,23 @@ sio.on('say', (message: string) => {
 });
 
 try {
-    // client.connect();
+    client.connect();
 
 } catch (err) {
     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
     console.error(err.message);
 }
+
 client.on('connected', (adress, port) => {
     if (config.twitch.ShowJoinMessage) {
         client.action(config.twitch.Channel, config.twitch.JoinMessage);
     }
-});
+}).on("join", (channel, username, self) => {
+    if (self) return;
 
+    emmitVIPJoin(sio, username);
 
-client.on('message', (channel, tags, message, self) => {
+}).on('message', (channel, tags, message, self) => {
     try {
         if (self) return;
         const TAGS = tags;

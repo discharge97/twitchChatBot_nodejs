@@ -23,7 +23,7 @@
   },
   "scripts": {
     "build-exe": "tsc && nexe ./dist/server.js -r ./dist/*.js -o ./dist/twitchServer.exe",
-    "run": "tsc && node ./dist/server.js"
+    "start": "tsc && node ./dist/server.js"
   },
   "repository": {
     "type": "git",
