@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import { botSay } from './util';
 
 let db = new sqlite3.Database("C:\\sqlite\\twitchBot.db");
 
@@ -9,6 +10,7 @@ class User {
     dateModified: Date = new Date();
     exp: number = 0;
     watchTime: number = 0;
+    lvl: number = 1;
 
     constructor(username: string) {
         this.username = username;
@@ -16,7 +18,26 @@ class User {
 }
 
 export enum PointsType {
-    SubscriberBonus, FollowerBonus, FollowerMessage, SubscriberMessage, None
+    SubscriberBonus, UserBonus, UserMessage, SubscriberMessage, None
+}
+
+export const addPointsUserRange = (chatters: any, subs: string[]) => {
+
+    chatters.moderators.forEach((username: string) => {
+        addPoints(username, 0, PointsType.SubscriberBonus);
+    });
+
+    chatters.admins.forEach((username: string) => {
+        addPoints(username, 0, PointsType.SubscriberBonus);
+    });
+
+    chatters.global_mods.forEach((username: string) => {
+        addPoints(username, 0, PointsType.SubscriberBonus);
+    });
+
+    chatters.viewers.forEach((username: string) => {
+        addPoints(username, 0, subs.includes(username) ? PointsType.SubscriberBonus : PointsType.UserBonus);
+    });
 }
 
 export const addPoints = (username: string, amount: number = 0, type: PointsType = PointsType.None) => {
@@ -33,16 +54,13 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
         }
         else {
             switch (type) {
-                // case PointsType.User:
-                //     user.points += 9;
-                //     break;
-                case PointsType.FollowerMessage:
-                    user.points += 10;
+                case PointsType.UserMessage:
+                    user.points += 1;
                     break;
                 case PointsType.SubscriberMessage:
-                    user.points += 12;
+                    user.points += 2;
                     break;
-                case PointsType.FollowerBonus:
+                case PointsType.UserBonus:
                     user.points += 10;
                     break;
                 case PointsType.SubscriberBonus:
@@ -55,6 +73,29 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
         updateUser(user);
     });
 }
+
+export const pointsCommand = (twClient: any, channel: string, username: string) => {
+
+    db.get(`SELECT * FROM USER WHERE username LIKE '${username}'`, (err, row) => {
+        if (row) {
+            botSay(twClient, channel, `${username} Points: ${row.points}`);
+        } return;
+    });
+}
+
+export const watchTimeCommand = (twClient: any, channel: string, username: string) => {
+
+    db.get(`SELECT * FROM USER WHERE username LIKE '${username}'`, (err, row) => {
+        let user: User;
+        if (row) {
+            user = row;
+            user.watchTime
+            botSay(twClient, channel, `${username} Points: ${row.points}`);
+        } return;
+    });
+}
+
+
 
 export const removePoints = (username: string, amount: number, all: boolean = false) => {
 
@@ -71,6 +112,40 @@ export const removePoints = (username: string, amount: number, all: boolean = fa
         }
         else {
             user.points = (user.points - amount < 0) ? 0 : user.points - amount;
+        }
+        updateUser(user);
+    });
+}
+
+export const addExp = (username: string, amount: number, type: PointsType) => {
+
+    db.get(`SELECT * FROM USER WHERE username LIKE '${username}'`, (err, row) => {
+        let user: User;
+        if (row) {
+            user = row;
+        } else {
+            user = new User(username);
+        }
+        if (amount > 0) {
+            user.exp += amount;
+        }
+        else {
+            switch (type) {
+                case PointsType.UserMessage:
+                    user.exp += 1;
+                    break;
+                case PointsType.SubscriberMessage:
+                    user.exp += 2;
+                    break;
+                case PointsType.UserBonus:
+                    user.exp += 5;
+                    break;
+                case PointsType.SubscriberBonus:
+                    user.exp += 8;
+                    break;
+                default:
+                    break;
+            }
         }
         updateUser(user);
     });

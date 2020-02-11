@@ -2,6 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval } from './util'
 import cleverbot from "cleverbot-free";
+import { pointsCommand, watchTimeCommand } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
@@ -74,6 +75,39 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
 
         case "about":
             botSay(twClient, channel, "My creators name is Aleksandar(Alexander) Stojadinović. He's an okey guy, sometimes. He may join the chat from time to time under the nick 'discharge97', so watch out! Kappa");
+            break;
+
+        case "points":
+            pointsCommand(twClient, channel, TAGS.username);
+            break;
+
+
+        case "watchtime":
+            watchTimeCommand(twClient, channel, TAGS.username);
+            break;
+
+        case "uptime":
+            https.get(`https://beta.decapi.me/twitch/uptime/${channel}`, (res) => {
+                let uptime = "";
+
+                res.on("data", (chunk) => {
+                    uptime += chunk;
+                });
+
+                res.on("end", () => {
+                    try {
+                        say(twClient, channel, `${channel} has been streaming for ${uptime}`);
+
+                    } catch (err) {
+                        fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                        console.error(err.message);
+                    };
+                });
+
+            }).on("error", (err) => {
+                fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                console.error(err.message);
+            });
             break;
 
         default:

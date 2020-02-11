@@ -33,3 +33,9 @@ export const botSay = (client: any, channel: string, message: string) => {
 export const emmitVIPJoin = (io: SocketIO.Server, username: string) => {
     io.emit("vip", `${username}~ has joined the channel!`);
 }
+
+// const formatTime = (client: any, channel: string, minutes: number) => {
+
+
+//     botSay(client, channel, ``);
+// }
