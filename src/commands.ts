@@ -2,7 +2,6 @@ import fs from 'fs';
 import https from 'https';
 import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval } from './util'
 import cleverbot from "cleverbot-free";
-import { addPoints, PointsType } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
@@ -10,7 +9,6 @@ const regEx_commands = /([^\s]+)/g;
 
 export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
     const cmdParts: any = commandText.match(regEx_commands);
-    addPoints("", PointsType.User);
 
     console.log(commandText, cmdParts);
 

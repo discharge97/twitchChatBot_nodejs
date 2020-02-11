@@ -16,7 +16,7 @@ class User {
 }
 
 export enum PointsType {
-    SubscriberBonus, FollowerBonus, User, FollowerMessage, SubscriberMessage, None
+    SubscriberBonus, FollowerBonus, FollowerMessage, SubscriberMessage, None
 }
 
 export const addPoints = (username: string, amount: number = 0, type: PointsType = PointsType.None) => {
@@ -33,9 +33,9 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
         }
         else {
             switch (type) {
-                case PointsType.User:
-                    user.points += 9;
-                    break;
+                // case PointsType.User:
+                //     user.points += 9;
+                //     break;
                 case PointsType.FollowerMessage:
                     user.points += 10;
                     break;
@@ -70,7 +70,7 @@ export const removePoints = (username: string, amount: number, all: boolean = fa
             user.points = 0;
         }
         else {
-            user.points += amount;
+            user.points = (user.points - amount < 0) ? 0 : user.points - amount;
         }
         updateUser(user);
     });
@@ -79,17 +79,13 @@ export const removePoints = (username: string, amount: number, all: boolean = fa
 
 const updateUser = (user: User) => {
 
-    db.get(`SELECT * FROM USER WHERE id=${user.id}`, (err, row) => {
-        console.log("updateUser ->", row);
-
-        if (row) {
-            db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}', where id=${user.id}`, (err) => {
-                console.error(err);
-            });
-        } else {
-            db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',watchTime=${user.watchTime});`, (err) => {
-                console.error(err);
-            });
-        }
-    });
+    if (user.id >= 0) {
+        db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}', where id=${user.id}`, (err) => {
+            console.error(err);
+        });
+    } else {
+        db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',watchTime=${user.watchTime});`, (err) => {
+            console.error(err);
+        });
+    }
 }

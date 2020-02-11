@@ -8,6 +8,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say } from './commands'
 import { emmitVIPJoin } from './util';
+import { addPoints, PointsType } from './points';
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +53,22 @@ sio.on('connection', socket => {
 sio.on('say', (message: string) => {
     say(client, config.twitch.Channel, message);
 });
+
+const subInterval = setInterval(() => {
+    client.subscribers(config.twitch.Channel).then(usernames => {
+        usernames.forEach(user => {
+            addPoints(user, 0, PointsType.SubscriberBonus)
+        });
+    })
+}, 5 * 60000);
+
+const followerInterval = setInterval(() => { // get chatters??
+    client. (config.twitch.Channel).then(usernames => {
+        usernames.forEach(user => {
+            addPoints(user, 0, PointsType.SubscriberBonus)
+        });
+    })
+}, 5 * 60000);
 
 try {
     client.connect();
