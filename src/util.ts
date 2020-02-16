@@ -34,8 +34,15 @@ export const emmitVIPJoin = (io: SocketIO.Server, username: string) => {
     io.emit("vip", `${username}~ has joined the channel!`);
 }
 
-// const formatTime = (client: any, channel: string, minutes: number) => {
+export const emmitTitoCommand = (io: SocketIO.Server, fileName: string) => {
+    io.emit("tito", fileName);
+}
 
+export const emmitVote = (io: SocketIO.Server, client: any, channel: string, username: string, pos: string) => {
+    io.emit("vote", pos);
+    botSay(client, channel, `${username} has just voted for pos.`);
+}
 
-//     botSay(client, channel, ``);
-// }
+export const emmitSkipSong = (io: SocketIO.Server) => {
+    io.emit("skipSong", "skip");
+}

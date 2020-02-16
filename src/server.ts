@@ -6,7 +6,7 @@ import tmi from 'tmi.js';
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCommand, handleSpeech, say, config } from './commands'
+import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands } from './commands'
 import { emmitVIPJoin } from './util';
 import { addPointsUserRange, addPoints, PointsType, addExp } from './points';
 
@@ -49,6 +49,16 @@ sio.on('connection', socket => {
 
 sio.on('say', (message: string) => {
     say(client, config.twitch.Channel, message);
+});
+
+sio.on('vote', (message: string) => {
+    // Am I a good steamer?~Yes|No
+    handleVote(sio, client, config.twitch.Channel, message.split('~')[0], message.split('~')[1].split('|'));
+});
+
+sio.on('tito', (message: string) => {
+    // fail~dance~jump
+    setTitoCommands(message.split('~'));
 });
 
 
@@ -96,7 +106,7 @@ client.on('connected', (adress, port) => {
 
 }).on("subgift", (channel, username, streakMonth, targetUser, methods) => {
     addPoints(username, 200, PointsType.None, true);
-    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, he's a little reward, of 200 points, for you too! SeemsGood`)
+    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, he's a little reward of 200 points for you too! SeemsGood`);
 }).on('message', (channel, tags, message, self) => {
     try {
         if (self) return;

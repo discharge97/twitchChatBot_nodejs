@@ -1,17 +1,21 @@
 import fs from 'fs';
 import https from 'https';
-import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval } from './util'
+import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval, emmitVote, emmitTitoCommand, emmitSkipSong } from './util'
 import cleverbot from "cleverbot-free";
 import { pointsCommand, watchTimeCommand, TopRankType, getTop } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
-
+let titoCmds: string[] = [];
 const updateConf = (): any => {
     return config = JSON.parse(fs.readFileSync('config.json').toString());
 }
 let config = updateConf();
 export { config };
+
+export const setTitoCommands = (cmds: string[]) => {
+    titoCmds = cmds;
+}
 
 
 export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
@@ -155,6 +159,35 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
 
             break;
 
+        case "vote":
+
+            if (cmdParts[1] === 'skipsong') {
+
+            } else if (cmdParts[1].length == 1) {
+                emmitVote(io, twClient, channel, TAGS.username, cmdParts[2])
+            } else {
+                botSay(twClient, channel, `Invalid vote option. Please use index number to vote.`);
+            }
+
+            break;
+
+        case "tito":
+
+            if (cmdParts.length == 2) {
+                botSay(twClient, channel, `Use ${config.twitch.CommandPrefix}tito <${titoCmds.join("/")}> to play sound/video.`);
+            } else {
+                emmitTitoCommand(io, cmdParts[1]);
+            }
+
+            break;
+
+        case "skipsong":
+            if (twClient.isMod(channel, TAGS.username) || TAGS.username === channel) {
+                emmitSkipSong(io);
+            } else {
+                botSay(twClient, channel, "Only mods can skip the song without a vote. If you can to suggest skipping the current song, try to vote!");
+            } break;
+
         case "cmds": case "commands":
             botSay(twClient, channel, `*${config.twitch.CommandPrefix}whitelist(w) add/remove <username>, *${config.twitch.CommandPrefix}updatecfg, ${config.twitch.CommandPrefix}sr <YouTube_url>, ${config.twitch.CommandPrefix}mods, ${config.twitch.CommandPrefix}about, ${config.twitch.CommandPrefix}points, ${config.twitch.CommandPrefix}watchtime, ${config.twitch.CommandPrefix}uptime, ${config.twitch.CommandPrefix}commands(cmds), ${config.twitch.CommandPrefix}top exp/subs/watchtime`);
             botSay(twClient, channel, `Commands noted with '*' can only use mods.`);
@@ -177,4 +210,14 @@ export const handleSpeech = (io: SocketIO.Server, twClient: any, channel: string
 
 export const say = (twClient: any, channel: string, message: string) => {
     botSay(twClient, channel, message);
+}
+
+export const handleVote = (io: SocketIO.Server, twClient: any, channel: string, title: string, options: string[]) => {
+    // io.emit("vote", "aa");
+    let tmp = '';
+    for (let i = 0; i < options.length; i++) {
+        tmp += '' + (i + 1) + options[i] + ', '
+    }
+    botSay(twClient, channel, title);
+    botSay(twClient, channel, tmp);
 }
