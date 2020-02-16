@@ -11,6 +11,7 @@ class User {
     exp: number = 0;
     watchTime: number = 0;
     lvl: number = 1;
+    giftSub: number | undefined;
 
     constructor(username: string) {
         this.username = username;
@@ -19,6 +20,10 @@ class User {
 
 export enum PointsType {
     SubscriberBonus, UserBonus, UserMessage, SubscriberMessage, None
+}
+
+export enum TopRankType {
+    TopSubs, TopWatchTime, TopExp, TopPoints, None
 }
 
 export const addPointsUserRange = (chatters: any, subs: string[]) => {
@@ -40,7 +45,7 @@ export const addPointsUserRange = (chatters: any, subs: string[]) => {
     });
 }
 
-export const addPoints = (username: string, amount: number = 0, type: PointsType = PointsType.None) => {
+export const addPoints = (username: string, amount: number = 0, type: PointsType = PointsType.None, gift: boolean = false) => {
 
     db.get(`SELECT * FROM USER WHERE username LIKE '${username}'`, (err, row) => {
         let user: User;
@@ -70,6 +75,14 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
                     break;
             }
         }
+        if (gift) {
+            if (user.giftSub) {
+                user.giftSub += 1;
+            } else {
+                user.giftSub = 1;
+            }
+        }
+        user.dateModified = new Date();
         updateUser(user);
     });
 }
@@ -113,6 +126,7 @@ export const removePoints = (username: string, amount: number, all: boolean = fa
         else {
             user.points = (user.points - amount < 0) ? 0 : user.points - amount;
         }
+        user.dateModified = new Date();
         updateUser(user);
     });
 }
@@ -147,7 +161,38 @@ export const addExp = (username: string, amount: number, type: PointsType) => {
                     break;
             }
         }
+        user.dateModified = new Date();
         updateUser(user);
+    });
+}
+
+export const getTop = (twClient: any, channel: string, type: TopRankType, amount: number = 5) => {
+    let users: string[] = [];
+    let sql = "";
+
+    switch (type) {
+        case TopRankType.TopExp:
+            sql = `SELECT username FROM user order by exp desc LIMIT ${amount};`;
+            break;
+        case TopRankType.TopSubs:
+            sql = `SELECT username FROM user order by giftSub desc LIMIT ${amount};`;
+            break;
+        case TopRankType.TopWatchTime:
+            sql = `SELECT username FROM user order by watchTime desc LIMIT ${amount};`;
+            break;
+        case TopRankType.TopPoints:
+            sql = `SELECT username FROM user order by points desc LIMIT ${amount};`;
+            break;
+        default:
+            return;
+            break;
+    }
+    db.each(sql, (err, row) => {
+        users.push(row);
+    }, () => {
+        if (users.length > 0) {
+            botSay(twClient, channel, `Top ${users.length} users: ${users.join(", ")}`);
+        }
     });
 }
 

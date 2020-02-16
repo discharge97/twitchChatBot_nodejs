@@ -6,7 +6,7 @@ import tmi from 'tmi.js';
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCommand, handleSpeech, say } from './commands'
+import { handleCommand, handleSpeech, say, config } from './commands'
 import { emmitVIPJoin } from './util';
 import { addPointsUserRange, addPoints, PointsType, addExp } from './points';
 
@@ -15,8 +15,6 @@ const server = http.createServer(app);
 const sio = io(server);
 
 //#region Configuration properties
-// ================================================ Configuration properties ================================================
-const config = JSON.parse(fs.readFileSync('config.json').toString());
 const options = {
     options: {
         debug: false
@@ -39,7 +37,6 @@ app.get('/', (_, res) => {
     res.sendFile(join(process.cwd(), "index.html"));
 });
 // sio.use("transports", ["websocket"]);
-// ================================================ END OF Configuration properties ================================================
 //#endregion Configuration properties
 
 server.listen(8080, () => console.log("Server is running on 127.0.0.1:8080!"));
@@ -78,7 +75,7 @@ setInterval(() => {
         fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
         console.error(err.message);
     });
-}, 1 * 60000); // set to 5 minutes
+}, 5 * 60000);
 
 try {
     client.connect();
@@ -98,8 +95,8 @@ client.on('connected', (adress, port) => {
     emmitVIPJoin(sio, username);
 
 }).on("subgift", (channel, username, streakMonth, targetUser, methods) => {
-    addPoints(username, 500);
-    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, he's a little reward, of 500 points, for you too! SeemsGood`)
+    addPoints(username, 200, PointsType.None, true);
+    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, he's a little reward, of 200 points, for you too! SeemsGood`)
 }).on('message', (channel, tags, message, self) => {
     try {
         if (self) return;
@@ -111,8 +108,9 @@ client.on('connected', (adress, port) => {
             handleCommand(sio, client, channel, TAGS, cmdText.replace(config.twitch.CommandPrefix, ""));
 
         } else {
-            // TODO: Nemoj da saljes u app konstantno
-            handleSpeech(sio, client, channel, TAGS, message);
+            if (config.speech.EnableVoiceSpeech) {
+                handleSpeech(sio, client, channel, TAGS, message);
+            }
         }
         if (TAGS.username) {
             addExp(TAGS.username, 0, PointsType.UserMessage);

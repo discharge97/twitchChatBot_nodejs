@@ -2,10 +2,16 @@ import fs from 'fs';
 import https from 'https';
 import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval } from './util'
 import cleverbot from "cleverbot-free";
-import { pointsCommand, watchTimeCommand } from './points';
+import { pointsCommand, watchTimeCommand, TopRankType, getTop } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
+
+const updateConf = (): any => {
+    return config = JSON.parse(fs.readFileSync('config.json').toString());
+}
+let config = updateConf();
+export { config };
 
 
 export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
@@ -16,6 +22,9 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
     switch (cmdParts[0].toLowerCase()) {
         case "sr":
             console.log("!sr");
+            if (!config.songRequests.AllowSongRequests) {
+                break;
+            }
 
             const url = cmdParts[1];
             const match = url.match(regEx_youTubeID);
@@ -56,11 +65,11 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
         case "whitelist": case "w":
             console.log("!whitelist");
 
-            if (twClient.isMod(channel, TAGS.username)) {
+            if (twClient.isMod(channel, TAGS.username) || TAGS.username === channel) {
                 if (cmdParts[1] === "add") {
-                    emmitWHAdd(io, cmdParts[2]);
-                } else if (cmdParts[2] === "remove" || cmdParts[2] === "rm") {
-                    emmitWHRemove(io, cmdParts[2]);
+                    emmitWHAdd(io, cmdParts[2].replace("@", ""));
+                } else if (cmdParts[1] === "remove" || cmdParts[1] === "rm") {
+                    emmitWHRemove(io, cmdParts[2].replace("@", ""));
                 }
             } else {
                 botSay(twClient, channel, "Only mods can add/remove people from whitelist. Type !admin/!a add/remove(rm) <username> to add/remove a user to admin group");
@@ -110,8 +119,49 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
             });
             break;
 
+        case "updatecfg":
+            if (twClient.isMod(channel, TAGS.username) || TAGS.username === channel) {
+                updateConf();
+                botSay(twClient, channel, "Config file has been updated!");
+            } else {
+                botSay(twClient, channel, "Only mods can update the configuration file!");
+            }
+            break;
+
+        case "top":
+
+            switch (cmdParts[1]) {
+                case "exp":
+                    getTop(twClient, channel, TopRankType.TopExp);
+                    break;
+
+                case "subs":
+                    getTop(twClient, channel, TopRankType.TopSubs);
+                    break;
+
+                case "watchtime":
+
+                    getTop(twClient, channel, TopRankType.TopWatchTime);
+                    break;
+
+                case "points":
+                    getTop(twClient, channel, TopRankType.TopPoints);
+                    break;
+
+                default:
+                    botSay(twClient, channel, `Parameter '${cmdParts[1]}' is invalid. Use 'exp', 'subs' or 'watchtime'`);
+                    break;
+            }
+
+            break;
+
+        case "cmds": case "commands":
+            botSay(twClient, channel, `*${config.twitch.CommandPrefix}whitelist(w) add/remove <username>, *${config.twitch.CommandPrefix}updatecfg, ${config.twitch.CommandPrefix}sr <YouTube_url>, ${config.twitch.CommandPrefix}mods, ${config.twitch.CommandPrefix}about, ${config.twitch.CommandPrefix}points, ${config.twitch.CommandPrefix}watchtime, ${config.twitch.CommandPrefix}uptime, ${config.twitch.CommandPrefix}commands(cmds), ${config.twitch.CommandPrefix}top exp/subs/watchtime`);
+            botSay(twClient, channel, `Commands noted with '*' can only use mods.`);
+            break;
+
         default:
-            botSay(twClient, channel, "Unknown command.");
+            botSay(twClient, channel, `Unknown command. Type '${config.twitch.CommandPrefix}commands' or '${config.twitch.CommandPrefix}cmds' to see a list of commands`);
             break;
     }
 }
