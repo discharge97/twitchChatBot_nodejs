@@ -200,12 +200,16 @@ export const getTop = (twClient: any, channel: string, type: TopRankType, amount
 const updateUser = (user: User) => {
 
     if (user.id >= 0) {
-        db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}', where id=${user.id}`, (err) => {
-            console.error(err);
+        db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}' where id=${user.id}`, (err) => {
+            if (err) {
+                console.error("update user", err);
+            }
         });
     } else {
-        db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES (${user.username},${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',watchTime=${user.watchTime});`, (err) => {
-            console.error(err);
+        db.exec(`insert into user (username, points, exp, dateModified, watchTime) VALUES ('${user.username}',${user.points}, ${user.exp},'${(new Date).toLocaleDateString()}',${user.watchTime});`, (err) => {
+            if (err) {
+                console.error("insert user", err);
+            }
         });
     }
 }

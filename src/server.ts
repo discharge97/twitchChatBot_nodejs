@@ -8,7 +8,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands } from './commands'
 import { emmitVIPJoin } from './util';
-import { addPointsUserRange, addPoints, PointsType, addExp } from './points';
+import { addPointsUserRange, addPoints, PointsType, addExp, removePoints } from './points';
 
 const app = express();
 const server = http.createServer(app);
@@ -88,7 +88,8 @@ setInterval(() => {
 }, 5 * 60000);
 
 try {
-    client.connect();
+    // client.connect();
+    removePoints("testinggg", 200);
 
 } catch (err) {
     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
