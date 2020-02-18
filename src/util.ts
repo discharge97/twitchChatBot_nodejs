@@ -40,7 +40,9 @@ export const emmitTitoCommand = (io: SocketIO.Server, fileName: string) => {
 
 export const emmitVote = (io: SocketIO.Server, client: any, channel: string, username: string, pos: string) => {
     io.emit("vote", pos);
-    botSay(client, channel, `${username} has just voted for pos.`);
+    if (pos !== "skipsong") {
+        botSay(client, channel, `${username} has just voted for pos.`);
+    }
 }
 
 export const emmitSkipSong = (io: SocketIO.Server) => {

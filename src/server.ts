@@ -8,7 +8,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands } from './commands'
 // import { emmitVIPJoin } from './util';
-import { addPoints, PointsType, addExp, removePoints, addPointsUserRange } from './points';
+import { addPoints, PointsType, addPointsUserRange } from './points';
 
 const app = express();
 const server = http.createServer(app);
@@ -53,7 +53,7 @@ try {
         socket.on('vote', (vote: any) => {
             //title:    Am I a good steamer?
             //options:  Yes~No
-            handleVote(sio, client, config.twitch.Channel, vote["title"], vote["options"].split("~"));
+            handleVote(sio, client, config.twitch.Channel, vote["title"], vote["options"].split("~"), vote["time"]);
         });
 
         socket.on('tito', (cmds: string) => {
@@ -74,12 +74,14 @@ try {
 
             res.on("end", () => {
                 try {
-                    client.subscribers(config.twitch.Channel).then(subs => {
-                        addPointsUserRange(JSON.parse(body), subs);
-                    }).catch((err) => {
-                        fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
-                        console.error(err);
-                    });
+                    // client.subscribers(config.twitch.Channel).then(subs => {
+
+                    // }).catch((err) => {
+                    //     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                    //     console.error(err);
+                    // });
+                    // client.subscribersoff(config.twitch.Channel);
+                    addPointsUserRange(JSON.parse(body));
                 } catch (err) {
                     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
                     console.error(err);
@@ -99,7 +101,6 @@ try {
 
 try {
     client.connect();
-    removePoints("testinggg", 200);
 
 } catch (err) {
     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
@@ -122,6 +123,8 @@ client.on('connected', (adress, port) => {
     try {
         if (self) return;
         const TAGS = tags;
+        // console.log(tags);
+
 
         if (message.startsWith(config.twitch.CommandPrefix)) {
             let cmdText = message;
@@ -134,7 +137,8 @@ client.on('connected', (adress, port) => {
             }
         }
         if (TAGS.username) {
-            addExp(TAGS.username, 0, PointsType.UserMessage);
+            //addExp(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
+            addPoints(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
         }
     } catch (err) {
         fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);

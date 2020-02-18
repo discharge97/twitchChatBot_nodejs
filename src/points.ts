@@ -26,23 +26,31 @@ export enum TopRankType {
     TopSubs, TopWatchTime, TopExp, TopPoints, None
 }
 
-export const addPointsUserRange = (chatters: any, subs: string[]) => {
+export const addPointsUserRange = (chatters: any) => {
+    if (chatters.moderators) {
+        chatters.moderators.forEach((username: string) => {
+            addPoints(username, 0, PointsType.SubscriberBonus);
+        });
+    }
 
-    chatters.moderators.forEach((username: string) => {
-        addPoints(username, 0, PointsType.SubscriberBonus);
-    });
+    if (chatters.admins) {
+        chatters.admins.forEach((username: string) => {
+            addPoints(username, 0, PointsType.SubscriberBonus);
+        });
+    }
 
-    chatters.admins.forEach((username: string) => {
-        addPoints(username, 0, PointsType.SubscriberBonus);
-    });
+    if (chatters.global_mods) {
+        chatters.global_mods.forEach((username: string) => {
+            addPoints(username, 0, PointsType.SubscriberBonus);
+        });
+    }
 
-    chatters.global_mods.forEach((username: string) => {
-        addPoints(username, 0, PointsType.SubscriberBonus);
-    });
 
-    chatters.viewers.forEach((username: string) => {
-        addPoints(username, 0, subs.includes(username) ? PointsType.SubscriberBonus : PointsType.UserBonus);
-    });
+    if (chatters.viewers) {
+        chatters.viewers.forEach((username: string) => {
+            addPoints(username, 0, PointsType.UserBonus);
+        });
+    }
 }
 
 export const addPoints = (username: string, amount: number = 0, type: PointsType = PointsType.None, gift: boolean = false) => {
@@ -61,14 +69,18 @@ export const addPoints = (username: string, amount: number = 0, type: PointsType
             switch (type) {
                 case PointsType.UserMessage:
                     user.points += 1;
+                    user.exp += 10;
                     break;
                 case PointsType.SubscriberMessage:
+                    user.exp += 15;
                     user.points += 2;
                     break;
                 case PointsType.UserBonus:
+                    user.exp += 15;
                     user.points += 10;
                     break;
                 case PointsType.SubscriberBonus:
+                    user.exp += 20;
                     user.points += 15;
                     break;
                 default:

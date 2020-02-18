@@ -17,6 +17,14 @@ export const setTitoCommands = (cmds: string[]) => {
     titoCmds = cmds;
 }
 
+let voteActive: boolean = false;
+
+const startVoteTimer = (minutes: number) => {
+    setTimeout(() => {
+        voteActive = false;
+    }, minutes * 60000);
+}
+
 
 export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
     const cmdParts: any = commandText.match(regEx_commands);
@@ -162,11 +170,14 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
         case "vote":
 
             if (cmdParts[1] === 'skipsong') {
-
-            } else if (cmdParts[1].length == 1) {
-                emmitVote(io, twClient, channel, TAGS.username, cmdParts[2])
-            } else {
-                botSay(twClient, channel, `Invalid vote option. Please use index number to vote.`);
+                emmitVote(io, twClient, channel, TAGS.username, "skipsong");
+            }
+            if (voteActive) {
+                if (cmdParts[1].length == 1) {
+                    emmitVote(io, twClient, channel, TAGS.username, cmdParts[2]);
+                } else {
+                    botSay(twClient, channel, `Invalid vote option. Please use index number to vote.`);
+                }
             }
 
             break;
@@ -216,12 +227,13 @@ export const say = (twClient: any, channel: string, message: string) => {
     botSay(twClient, channel, message);
 }
 
-export const handleVote = (io: SocketIO.Server, twClient: any, channel: string, title: string, options: string[]) => {
+export const handleVote = (io: SocketIO.Server, twClient: any, channel: string, title: string, options: string[], minutes: number) => {
     // io.emit("vote", "aa");
     let tmp = '';
     for (let i = 0; i < options.length; i++) {
         tmp += '' + (i + 1) + options[i] + ', '
     }
+    startVoteTimer(minutes);
     botSay(twClient, channel, title);
     botSay(twClient, channel, tmp);
 }
