@@ -21,7 +21,7 @@ export const setTitoCommands = (cmds: string[]) => {
 export const handleCommand = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, commandText: string) => {
     const cmdParts: any = commandText.match(regEx_commands);
 
-    console.log(commandText, cmdParts);
+    // console.log(commandText, cmdParts);
 
     switch (cmdParts[0].toLowerCase()) {
         case "sr":
@@ -172,9 +172,10 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
             break;
 
         case "tito":
+            console.log("tito commands");
 
-            if (cmdParts.length == 2) {
-                botSay(twClient, channel, `Use ${config.twitch.CommandPrefix}tito <${titoCmds.join("/")}> to play sound/video.`);
+            if (cmdParts.length <= 1) {
+                botSay(twClient, channel, `To use special commands type ${config.twitch.CommandPrefix}tito <${titoCmds.join("/")}>`);
             } else {
                 emmitTitoCommand(io, cmdParts[1]);
             }
@@ -203,6 +204,9 @@ export const handleSpeech = (io: SocketIO.Server, twClient: any, channel: string
     if (randomIntFromInterval(1, 5) == 5) {
         (cleverbot(message) as unknown as Promise<string>).then(res => {
             botSay(twClient, channel, TAGS.username + ", " + res);
+        }).catch((err) => {
+            fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+            console.error(err);
         });
     }
     emmitSpeech(io, TAGS.username ? TAGS.username : "", message);

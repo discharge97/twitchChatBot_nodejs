@@ -7,8 +7,8 @@ import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands } from './commands'
-import { emmitVIPJoin } from './util';
-import { addPointsUserRange, addPoints, PointsType, addExp, removePoints } from './points';
+// import { emmitVIPJoin } from './util';
+import { addPoints, PointsType, addExp, removePoints, addPointsUserRange } from './points';
 
 const app = express();
 const server = http.createServer(app);
@@ -41,54 +41,64 @@ app.get('/', (_, res) => {
 
 server.listen(8080, () => console.log("Server is running on 127.0.0.1:8080!"));
 
+try {
 
-sio.on('connection', socket => {
-    console.log("Client:", socket.id, "has connected!");
+    sio.on('connection', socket => {
+        console.log("Client:", socket.id, "has connected!");
 
-});
-
-sio.on('say', (message: string) => {
-    say(client, config.twitch.Channel, message);
-});
-
-sio.on('vote', (message: string) => {
-    // Am I a good steamer?~Yes|No
-    handleVote(sio, client, config.twitch.Channel, message.split('~')[0], message.split('~')[1].split('|'));
-});
-
-sio.on('tito', (message: string) => {
-    // fail~dance~jump
-    setTitoCommands(message.split('~'));
-});
-
-
-setInterval(() => {
-    http.get(`http://tmi.twitch.tv/group/user/${config.twitch.Channel}/chatters`, (res) => {
-        let body = "";
-
-        res.on("data", (chunk) => {
-            body += chunk;
+        socket.on('say', (message: string) => {
+            say(client, config.twitch.Channel, message);
         });
 
-        res.on("end", () => {
-            try {
-                client.subscribers(config.twitch.Channel).then(subs => {
-                    addPointsUserRange(JSON.parse(body), subs);
-                });
-            } catch (err) {
-                fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
-                console.error(err.message);
-            };
+        socket.on('vote', (vote: any) => {
+            //title:    Am I a good steamer?
+            //options:  Yes~No
+            handleVote(sio, client, config.twitch.Channel, vote["title"], vote["options"].split("~"));
         });
 
-    }).on("error", (err) => {
-        fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
-        console.error(err.message);
+        socket.on('tito', (cmds: string) => {
+            // fail~dance~jump
+            cmds = cmds.replace(/"/g, "");
+            setTitoCommands(cmds.split("~"));
+        });
     });
-}, 5 * 60000);
+
+
+    setInterval(() => {
+        http.get(`http://tmi.twitch.tv/group/user/${config.twitch.Channel}/chatters`, (res) => {
+            let body = "";
+
+            res.on("data", (chunk) => {
+                body += chunk;
+            });
+
+            res.on("end", () => {
+                try {
+                    client.subscribers(config.twitch.Channel).then(subs => {
+                        addPointsUserRange(JSON.parse(body), subs);
+                    }).catch((err) => {
+                        fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                        console.error(err);
+                    });
+                } catch (err) {
+                    fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                    console.error(err);
+                };
+            });
+
+        }).on("error", (err) => {
+            fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+            console.error(err.message);
+        });
+    }, 5 * 60000);
+
+} catch (err) {
+    fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+    console.error(err.message);
+}
 
 try {
-    // client.connect();
+    client.connect();
     removePoints("testinggg", 200);
 
 } catch (err) {
@@ -103,7 +113,7 @@ client.on('connected', (adress, port) => {
 }).on("join", (channel, username, self) => {
     if (self) return;
 
-    emmitVIPJoin(sio, username);
+    //emmitVIPJoin(sio, username);
 
 }).on("subgift", (channel, username, streakMonth, targetUser, methods) => {
     addPoints(username, 200, PointsType.None, true);
