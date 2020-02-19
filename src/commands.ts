@@ -1,6 +1,6 @@
 import fs from 'fs';
 import https from 'https';
-import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval, emmitVote, emmitTitoCommand, emmitSkipSong } from './util'
+import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval, emmitVote, emmitTitoCommand, emmitSkipSong, emmitSetVolume, emmitYTCommand } from './util'
 import cleverbot from "cleverbot-free";
 import { pointsCommand, watchTimeCommand, TopRankType, getTop } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
@@ -203,6 +203,30 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
         case "cmds": case "commands":
             botSay(twClient, channel, `*${config.twitch.CommandPrefix}whitelist(w) add/remove <username>, *${config.twitch.CommandPrefix}updatecfg, ${config.twitch.CommandPrefix}sr <YouTube_url>, ${config.twitch.CommandPrefix}mods, ${config.twitch.CommandPrefix}about, ${config.twitch.CommandPrefix}points, ${config.twitch.CommandPrefix}watchtime, ${config.twitch.CommandPrefix}uptime, ${config.twitch.CommandPrefix}commands(cmds), ${config.twitch.CommandPrefix}top exp/subs/watchtime`);
             botSay(twClient, channel, `Commands noted with '*' can only use mods.`);
+            break;
+
+        case "volume":
+            if (twClient.isMod(channel, TAGS.username) || TAGS.username === channel) {
+                emmitSetVolume(io, parseInt(cmdParts[1]));
+            } else {
+                botSay(twClient, channel, "Only mods can set the volume of music.");
+            }
+            break;
+
+        case "music":
+            if (twClient.isMod(channel, TAGS.username) || TAGS.username === channel) {
+                if (cmdParts[1].includes("volume")) {
+                    emmitSetVolume(io, parseInt(cmdParts[2]));
+                }
+                else if (cmdParts[1].includes("start") || cmdParts[1].includes("pause")) {
+                    emmitYTCommand(io, cmdParts[1]);
+                }
+                else {
+                    botSay(twClient, channel, "Invalid music command");
+                }
+            } else {
+                botSay(twClient, channel, "Only mods can set the volume of music.");
+            }
             break;
 
         default:

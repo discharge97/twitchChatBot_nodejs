@@ -48,3 +48,14 @@ export const emmitVote = (io: SocketIO.Server, client: any, channel: string, use
 export const emmitSkipSong = (io: SocketIO.Server) => {
     io.emit("skipSong", "skip");
 }
+
+export const emmitSetVolume = (io: SocketIO.Server, value: number) => {
+    // if (value < 0) value = 0;
+    // else if (value > 100) value = 100;
+
+    io.emit("volume", (value < 0) ? 0 : (value > 100) ? 100 : value);
+}
+
+export const emmitYTCommand = (io: SocketIO.Server, command: string) => {
+    io.emit("YT", command);
+}
