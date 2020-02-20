@@ -6,7 +6,7 @@ import tmi from 'tmi.js';
 import fs from 'fs';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands } from './commands'
+import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands, clearSkipSongVotedUsers } from './commands'
 // import { emmitVIPJoin } from './util';
 import { addPoints, PointsType, addPointsUserRange } from './points';
 
@@ -74,14 +74,8 @@ try {
 
             res.on("end", () => {
                 try {
-                    // client.subscribers(config.twitch.Channel).then(subs => {
-
-                    // }).catch((err) => {
-                    //     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
-                    //     console.error(err);
-                    // });
-                    // client.subscribersoff(config.twitch.Channel);
                     addPointsUserRange(JSON.parse(body));
+                    addPoints(config.twitch.Channel, 50);
                 } catch (err) {
                     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
                     console.error(err);
@@ -92,6 +86,7 @@ try {
             fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
             console.error(err.message);
         });
+        clearSkipSongVotedUsers();
     }, 5 * 60000);
 
 } catch (err) {
@@ -123,8 +118,6 @@ client.on('connected', (adress, port) => {
     try {
         if (self) return;
         const TAGS = tags;
-        // console.log(tags);
-
 
         if (message.startsWith(config.twitch.CommandPrefix)) {
             let cmdText = message;
@@ -132,13 +125,13 @@ client.on('connected', (adress, port) => {
             handleCommand(sio, client, channel, TAGS, cmdText.replace(config.twitch.CommandPrefix, ""));
 
         } else {
+            if (TAGS.username) {
+                //addExp(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
+                addPoints(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
+            }
             if (config.speech.EnableVoiceSpeech) {
                 handleSpeech(sio, client, channel, TAGS, message);
             }
-        }
-        if (TAGS.username) {
-            //addExp(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
-            addPoints(TAGS.username, 0, (TAGS.subscriber || TAGS.mod) ? PointsType.SubscriberMessage : PointsType.UserMessage);
         }
     } catch (err) {
         fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);

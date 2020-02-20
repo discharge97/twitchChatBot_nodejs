@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { botSay } from './util';
 
-let db = new sqlite3.Database("C:\\sqlite\\twitchBot.db");
+export let db = new sqlite3.Database("C:\\sqlite\\twitchBot.db");
 
 class User {
     readonly id: number = -1;
@@ -23,7 +23,7 @@ export enum PointsType {
 }
 
 export enum TopRankType {
-    TopSubs, TopWatchTime, TopExp, TopPoints, None
+    TopSubs = "subs", TopWatchTime = "watchtime", TopExp = "exp", TopPoints = "points", None = "none"
 }
 
 export const addPointsUserRange = (chatters: any) => {
@@ -44,7 +44,6 @@ export const addPointsUserRange = (chatters: any) => {
             addPoints(username, 0, PointsType.SubscriberBonus);
         });
     }
-
 
     if (chatters.viewers) {
         chatters.viewers.forEach((username: string) => {
@@ -200,19 +199,20 @@ export const getTop = (twClient: any, channel: string, type: TopRankType, amount
             break;
     }
     db.each(sql, (err, row) => {
-        users.push(row);
+        if (row) {
+            users.push(row.username);
+        }
     }, () => {
         if (users.length > 0) {
-            botSay(twClient, channel, `Top ${users.length} users: ${users.join(", ")}`);
+            botSay(twClient, channel, `Top ${users.length} users by ${type.toString()}: ${users.join(", ")}`);
         }
     });
 }
 
 
-const updateUser = (user: User) => {
-
+export const updateUser = (user: User) => {
     if (user.id >= 0) {
-        db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${user.dateModified.toLocaleDateString()}' where id=${user.id}`, (err) => {
+        db.exec(`update user set points=${user.points},exp=${user.exp},dateModified='${(user.dateModified instanceof Date) ? user.dateModified.toLocaleDateString() : user.dateModified}' where id=${user.id}`, (err) => {
             if (err) {
                 console.error("update user", err);
             }
