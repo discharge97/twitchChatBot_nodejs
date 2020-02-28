@@ -8,7 +8,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { handleCommand, handleSpeech, say, config, handleVote, setTitoCommands, clearSkipSongVotedUsers } from './commands'
 // import { emmitVIPJoin } from './util';
-import { addPoints, PointsType, addPointsUserRange } from './points';
+import { addPoints, PointsType, addPointsUserRange, subscribedUser, addWatchTime } from './points';
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +89,31 @@ try {
         clearSkipSongVotedUsers();
     }, 5 * 60000);
 
+    setInterval(() => {
+        say(client, config.twitch.Channel, "With every message you recieve 1 point. Subscribers and mods recieve a little more. ;) To view your points balance type '!points' Type '!lvl' too see what level you are!");
+        http.get(`http://tmi.twitch.tv/group/user/${config.twitch.Channel}/chatters`, (res) => {
+            let body = "";
+
+            res.on("data", (chunk) => {
+                body += chunk;
+            });
+
+            res.on("end", () => {
+                try {
+                    addWatchTime(body);
+                } catch (err) {
+                    fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                    console.error(err);
+                };
+            });
+
+        }).on("error", (err) => {
+            fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+            console.error(err.message);
+        });
+        clearSkipSongVotedUsers();
+    }, 60000);
+
 } catch (err) {
     fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
     console.error(err.message);
@@ -107,13 +132,15 @@ client.on('connected', (adress, port) => {
         client.action(config.twitch.Channel, config.twitch.JoinMessage);
     }
 }).on("join", (channel, username, self) => {
-    if (self) return;
 
     //emmitVIPJoin(sio, username);
 
+}).on("subscription", (channel, username, tmp, message, userstate) => {
+    subscribedUser(client, channel, username, 100, `${username} has subscripted! Here's a little reward of 100 points! :D`);
+    say(client, channel, `${username} has subscripted! Here's a little reward of 100 points! :D`);
 }).on("subgift", (channel, username, streakMonth, targetUser, methods) => {
     addPoints(username, 200, PointsType.None, true);
-    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, he's a little reward of 200 points for you too! SeemsGood`);
+    say(client, channel, `${username} has gifted a sub to ${targetUser}! Such a nice guy, here's a little reward of 200 points for you too! SeemsGood`);
 }).on('message', (channel, tags, message, self) => {
     try {
         if (self) return;

@@ -2,7 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import { botSay, emmitSR, emmitSpeech, emmitWHAdd, emmitWHRemove, randomIntFromInterval, emmitVote, emmitTitoCommand, emmitSkipSong, emmitSetVolume, emmitYTCommand } from './util'
 import cleverbot from "cleverbot-free";
-import { pointsCommand, TopRankType, getTop, addPoints, db, updateUser } from './points';
+import { pointsCommand, TopRankType, getTop, addPoints, db, updateUser, handleLevelCommand } from './points';
 const regEx_youTubeID = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
 const YTKEY = "AIzaSyDMPgGc8pOHzQRZOvwYcKqNFWzAzsGy8Ps";
 const regEx_commands = /([^\s]+)/g;
@@ -17,6 +17,7 @@ export const setTitoCommands = (cmds: string[]) => {
     titoCmds = cmds;
 }
 
+let botMsgs: string[] = [];
 let voteActive: boolean = false;
 
 const startVoteTimer = (minutes: number) => {
@@ -167,7 +168,7 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
             break;
 
         case "uptime":
-            https.get(`https://beta.decapi.me/twitch/uptime/${channel}`, (res) => {
+            https.get(`https://beta.decapi.me/twitch/uptime/${channel.replace('#', '')}`, (res) => {
                 let uptime = "";
 
                 res.on("data", (chunk) => {
@@ -176,7 +177,9 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
 
                 res.on("end", () => {
                     try {
-                        say(twClient, channel, `${channel} has been streaming for ${uptime}`);
+                        if (uptime) {
+                            say(twClient, channel, `${channel} has been streaming for ${uptime}`);
+                        }
 
                     } catch (err) {
                         fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
@@ -199,24 +202,30 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
             }
             break;
 
-        case "top":
+        // rank top 3 exp
+        case "rank":
+            if (cmdParts[1].toLowerCase() === "top" && !isNaN(cmdParts[2])) {
+                switch (cmdParts[3]) {
+                    case "exp":
+                        getTop(twClient, channel, TopRankType.TopExp, parseInt(cmdParts[2]));
+                        break;
 
-            switch (cmdParts[1]) {
-                case "exp":
-                    getTop(twClient, channel, TopRankType.TopExp);
-                    break;
+                    case "subs":
+                        getTop(twClient, channel, TopRankType.TopSubs, parseInt(cmdParts[2]));
+                        break;
 
-                case "subs":
-                    getTop(twClient, channel, TopRankType.TopSubs);
-                    break;
+                    case "points":
+                        getTop(twClient, channel, TopRankType.TopPoints, parseInt(cmdParts[2]));
+                        break;
 
-                case "points":
-                    getTop(twClient, channel, TopRankType.TopPoints);
-                    break;
+                    case "watchtime":
+                        getTop(twClient, channel, TopRankType.TopWatchTime, parseInt(cmdParts[2]));
+                        break;
 
-                default:
-                    botSay(twClient, channel, `Parameter '${cmdParts[1]}' is invalid. Use 'exp', 'subs' or 'points'`);
-                    break;
+                    default:
+                        botSay(twClient, channel, `Parameter '${cmdParts[1]}' is invalid. Use 'exp', 'subs' , 'points' or 'watchtime'`);
+                        break;
+                }
             }
 
             break;
@@ -329,8 +338,29 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
             break;
 
         case "cmds": case "commands":
-            botSay(twClient, channel, `*${config.twitch.CommandPrefix}whitelist(w) add/remove <username>, *${config.twitch.CommandPrefix}updatecfg,*${config.twitch.CommandPrefix}volume <amount>,*${config.twitch.CommandPrefix}music <play/pause/volume <amount>>,*${config.twitch.CommandPrefix}skipsong,${config.twitch.CommandPrefix}vote <option_index/skipsong>, ${config.twitch.CommandPrefix}sr <YouTube_url>, ${config.twitch.CommandPrefix}about, ${config.twitch.CommandPrefix}points, ${config.twitch.CommandPrefix}uptime, ${config.twitch.CommandPrefix}commands(cmds), ${config.twitch.CommandPrefix}top <exp/subs/points>,${config.twitch.CommandPrefix}roulette <'odd'/'event'/your_number> <points_amount>, ${config.twitch.CommandPrefix}tito <${titoCmds.join("/")}>`);
+            botSay(twClient, channel, `*${config.twitch.CommandPrefix}whitelist(w) add/remove <username>, *${config.twitch.CommandPrefix}updatecfg,*${config.twitch.CommandPrefix}volume <amount>,*${config.twitch.CommandPrefix}music <play/pause/volume <amount>>,*${config.twitch.CommandPrefix}skipsong,${config.twitch.CommandPrefix}vote <option_index/skipsong>, ${config.twitch.CommandPrefix}sr <YouTube_url>, ${config.twitch.CommandPrefix}about, ${config.twitch.CommandPrefix}points, ${config.twitch.CommandPrefix}uptime,${config.twitch.CommandPrefix}lvl(level), ${config.twitch.CommandPrefix}commands(cmds), ${config.twitch.CommandPrefix}rank top <top_number - max 10> <exp/subs/points>,${config.twitch.CommandPrefix}roulette <'odd'/'event'/your_number> <points_amount>, ${config.twitch.CommandPrefix}tito <${titoCmds.join("/")}>`);
             botSay(twClient, channel, `Commands noted with '*' can only use mods.`);
+            break;
+
+        case "lvl": case "level":
+            handleLevelCommand(twClient, channel, TAGS.username);
+            break;
+
+        case "bot":
+            const quest = commandText.replace("bot", "").trimLeft();
+
+            (cleverbot(quest, botMsgs) as unknown as Promise<string>).then(res => {
+                botMsgs.push(quest);
+                botMsgs.push(res);
+                botSay(twClient, channel, TAGS.username + ", " + res);
+                if (botMsgs.length >= 22) {
+                    botMsgs.slice(0, 2);
+                }
+
+            }).catch((err) => {
+                fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+                console.error(err);
+            });
             break;
 
         default:
@@ -340,14 +370,18 @@ export const handleCommand = (io: SocketIO.Server, twClient: any, channel: strin
 }
 
 export const handleSpeech = (io: SocketIO.Server, twClient: any, channel: string, TAGS: any, message: string) => {
-    if (randomIntFromInterval(1, 5) == 5) {
-        (cleverbot(message) as unknown as Promise<string>).then(res => {
-            botSay(twClient, channel, TAGS.username + ", " + res);
-        }).catch((err) => {
-            fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
-            console.error(err);
-        });
-    }
+    // let x = randomIntFromInterval(1, 5)
+    // console.log("guess", x);
+
+    // if (x == 5) {
+    //     (cleverbot(message) as unknown as Promise<string>).then(res => {
+    //         botSay(twClient, channel, TAGS.username + ", " + res);
+    //         console.log("bot res", res);
+    //     }).catch((err) => {
+    //         fs.appendFileSync("server_errors.log", `${(new Date()).toJSON().slice(0, 19).replace(/[-T]/g, ':')}\n${err.message}\n\n`);
+    //         console.error(err);
+    //     });
+    // }
     emmitSpeech(io, TAGS.username ? TAGS.username : "", message);
 }
 
