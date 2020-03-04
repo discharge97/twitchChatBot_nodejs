@@ -2,7 +2,7 @@
   "twitch": {
     "BotUsername": "discharge97",
     "Channel": "discharge97",
-    "Oauth": "oauth:ejnnqhfwji7vq7d3pny379dv5bj9l1",
+    "Oauth": "oauth:xxxxxxxxxxxxxxxxxxxxxxxxxx",
     "JoinMessage": "Hi! How is it going? VoHiYo",
     "ShowJoinMessage": true,
     "CommandPrefix": "!"
